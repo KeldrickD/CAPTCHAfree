@@ -44,7 +44,7 @@ export default function RaffleEntry() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold text-indigo-700 mb-3">Raffle Rules</h3>
-          <ul className="text-sm text-left space-y-2">
+          <ul className="text-sm text-left space-y-2 text-gray-800 font-medium">
             <li className="flex items-start">
               <FaGift className="text-green-600 mt-1 mr-2 flex-shrink-0" />
               <span><strong>Prize:</strong> 0.01 ETH or Rare Bonus NFT</span>
@@ -55,7 +55,7 @@ export default function RaffleEntry() {
             </li>
             <li className="flex items-start">
               <FaCalendarAlt className="text-purple-600 mt-1 mr-2 flex-shrink-0" />
-              <span><strong>Draw:</strong> After X mints or X days (public announcement)</span>
+              <span><strong>Draw:</strong> After 100 mints or May 30th (whichever comes first)</span>
             </li>
           </ul>
           
