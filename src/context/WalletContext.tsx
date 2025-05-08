@@ -64,6 +64,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [isSmartWallet, setIsSmartWallet] = useState(false);
+  const [walletProvider, setWalletProvider] = useState<any>(null);
 
   const connect = async () => {
     if (!isBrowser) return;
@@ -78,18 +79,21 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       });
 
       // Create provider with Smart Wallet option - using smartWalletOnly
-      const walletProvider = coinbaseWallet.makeWeb3Provider(
+      const provider = coinbaseWallet.makeWeb3Provider(
         BASE_SEPOLIA.rpcUrls.default.http[0], 
         BASE_SEPOLIA.id,
         // @ts-ignore - options parameter is supported but not in types
         { options: 'smartWalletOnly' }
       );
       
+      // Save the provider for direct RPC access
+      setWalletProvider(provider);
+      
       // Request accounts to connect - this will trigger the Smart Wallet UI
-      await walletProvider.request({ method: 'eth_requestAccounts' });
+      await provider.request({ method: 'eth_requestAccounts' });
       
       // @ts-expect-error - Type issues with provider
-      const ethersProvider = new ethers.providers.Web3Provider(walletProvider);
+      const ethersProvider = new ethers.providers.Web3Provider(provider);
       await ethersProvider.ready;
       
       const signer = ethersProvider.getSigner();
@@ -124,19 +128,41 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setProvider(null);
     setSigner(null);
     setIsSmartWallet(false);
+    setWalletProvider(null);
   };
 
   const sendTransaction = async (to: string, value: string): Promise<string> => {
-    if (!signer) {
+    if (!address) {
       throw new Error('Wallet not connected');
     }
 
     try {
-      const tx = await signer.sendTransaction({
-        to,
-        value: ethers.utils.parseEther(value),
-      });
-      return tx.hash;
+      // Convert ETH value to Wei as hex string
+      const valueWei = ethers.utils.hexValue(ethers.utils.parseEther(value));
+      
+      if (isSmartWallet && walletProvider) {
+        // Use the raw provider method directly for Smart Wallet
+        // This bypasses any issues with ethers.js and Smart Wallet
+        const txHash = await walletProvider.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: address,
+            to,
+            value: valueWei
+          }]
+        }) as string;
+        
+        return txHash;
+      } else if (signer) {
+        // Fallback to ethers.js for regular wallets
+        const tx = await signer.sendTransaction({
+          to,
+          value: ethers.utils.parseEther(value),
+        });
+        return tx.hash;
+      } else {
+        throw new Error('No wallet available');
+      }
     } catch (error) {
       console.error('Transaction failed:', error);
       throw error;
