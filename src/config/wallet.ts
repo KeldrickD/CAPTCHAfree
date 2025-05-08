@@ -1,4 +1,4 @@
-import { Chain } from '@coinbase/onchainkit';
+import { Chain } from 'viem/chains';
 
 export const BASE_SEPOLIA: Chain = {
   id: 84532,
@@ -14,7 +14,7 @@ export const BASE_SEPOLIA: Chain = {
     public: { http: ['https://sepolia.base.org'] },
   },
   blockExplorers: {
-    default: { name: 'Base Sepolia Explorer', url: 'https://sepolia.basescan.org' },
+    default: { name: 'BaseScan', url: 'https://sepolia.basescan.org' },
   },
   testnet: true,
 }; 

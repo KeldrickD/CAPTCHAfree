@@ -121,10 +121,13 @@ export default function Captcha() {
       {isConnected && !showSmartWalletSetup && !solved && (
         <>
           <div className="flex justify-center">
-            <img
+            <Image
               src={captchaImage}
               alt="CAPTCHA Challenge"
+              width={300}
+              height={100}
               className="rounded-lg w-full max-w-sm border shadow"
+              priority
             />
           </div>
           <div className="text-center relative group">
