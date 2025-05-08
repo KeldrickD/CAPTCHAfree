@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useWallet } from '../contexts/WalletContext';
+import { useWallet } from '../context/WalletContext';
 import { checkVerificationStatus, verifyHumanity } from '../utils/subAccount';
 
 interface ProtectedContentProps {
