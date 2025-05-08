@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useWallet } from '../context/WalletContext';
+import Image from 'next/image';
 
 interface NFT {
   id: string;
@@ -11,17 +12,15 @@ interface NFT {
   chain: string;
   emoji: string;
   bgClass: string;
-  imageUrl?: string; // Optional URL for NFT image
-  realImageUrl?: string; // URL fetched from Zora API
+  imageUrl: string; // URL for NFT image
 }
 
 interface ZoraNFTProps {
   txHash?: string;
 }
 
-// Define NFT data outside the component to prevent recreation on each render
+// Define real NFT data with actual IPFS image URLs
 const NFT_DATA: NFT[] = [
-  // Original NFT
   {
     id: "certified-frame-degen",
     name: "Certified Frame Degen",
@@ -30,9 +29,8 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🪙",
     bgClass: "from-blue-500 to-purple-600",
-    imageUrl: "https://i.imgur.com/N08eGjt.png" // Sample coin/token image
+    imageUrl: "https://ipfs.decentralized-content.com/ipfs/bafybeihbmin5tj7u4kin6yt634rierxssj7xrxypnprkochp5w4yvuagiq"
   },
-  // New NFTs from Zora
   {
     id: "think-last-mint-first",
     name: "Think Last Mint First",
@@ -41,7 +39,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🧠",
     bgClass: "from-pink-500 to-rose-600",
-    imageUrl: "https://i.imgur.com/uuY6YUJ.png" // Brain themed illustration
+    imageUrl: "https://ipfs.decentralized-content.com/ipfs/bafybeifqej6e4jxk2r5mzft22vnxbyd3fqgaxk45ygrkvpnezomyh3aboi"
   },
   {
     id: "based-until-rugged",
@@ -51,7 +49,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "💎",
     bgClass: "from-indigo-500 to-blue-600",
-    imageUrl: "https://i.imgur.com/9hGKsDQ.png" // Diamond hands illustration
+    imageUrl: "https://ipfs.decentralized-content.com/ipfs/bafybeiac5rcveaiu6rvytzhvt5srg7eeqz6j4b7qnftbvs4xqngcvwmwra"
   },
   {
     id: "gas-fee-victim",
@@ -61,60 +59,12 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "⛽",
     bgClass: "from-red-500 to-orange-600",
-    imageUrl: "https://i.imgur.com/Lnh9Icp.png" // Gas pump illustration
-  },
-  {
-    id: "mint-or-die-trying",
-    name: "Mint or Die Trying",
-    description: "50 casts, zero regrets.",
-    contract: "0xf801702a557c099d35e1da186ba2efb74221b020",
-    chain: "base",
-    emoji: "🎯",
-    bgClass: "from-emerald-500 to-green-600",
-    imageUrl: "https://i.imgur.com/bRYVHvT.png" // Target/bullseye illustration
-  },
-  {
-    id: "frame-farmer-supreme",
-    name: "Frame Farmer Supreme",
-    description: "I cast more than I sleep.",
-    contract: "0x4fbcd401338f98c17191fd3a3ae4671088a9089b",
-    chain: "base",
-    emoji: "🌾",
-    bgClass: "from-amber-500 to-yellow-600",
-    imageUrl: "https://i.imgur.com/nNv5srM.png" // Wheat/farming illustration
-  },
-  // Keep the other NFTs
-  {
-    id: "zora-nounish",
-    name: "Zora Nounish NFT",
-    description: "Fully on-chain generative artwork",
-    contract: "0x5050E8348A4f3afD2f8aF9Cd3A43c31A63333950",
-    chain: "zora",
-    emoji: "👓",
-    bgClass: "from-green-500 to-yellow-400",
-    imageUrl: "https://i.imgur.com/C1S5VG9.png" // Nouns glasses illustration
-  },
-  {
-    id: "base-defender",
-    name: "Base Defender",
-    description: "Early Base network supporter",
-    contract: "0xBc12373d5B667a936DfD6C5Fc66E5f817d878bb0",
-    chain: "base",
-    emoji: "🛡️",
-    bgClass: "from-indigo-600 to-blue-400",
-    imageUrl: "https://i.imgur.com/wSnVX09.png" // Shield illustration
+    imageUrl: "https://ipfs.decentralized-content.com/ipfs/bafybeig6u2pkggiwx4vnvrrwfhuk64tx4rnbrwrxhb7u6rfnj5tgyuuxqm"
   }
 ];
 
-// IPFS image URLs for the real NFTs
-const REAL_NFT_IMAGES: Record<string, string> = {
-  '0x7cacb079e2c91e1e18a82f7a4a0fce3417dbfa4c': 'https://ipfs.decentralized-content.com/ipfs/bafybeihbmin5tj7u4kin6yt634rierxssj7xrxypnprkochp5w4yvuagiq',
-  '0xcf92ad51e860aa3b00d654cb91c6996a477a01a7': 'https://ipfs.decentralized-content.com/ipfs/bafybeifqej6e4jxk2r5mzft22vnxbyd3fqgaxk45ygrkvpnezomyh3aboi',
-  '0xc50a8c7c68c847ba6e5377cc846bbb1d1ccea0bc': 'https://ipfs.decentralized-content.com/ipfs/bafybeiac5rcveaiu6rvytzhvt5srg7eeqz6j4b7qnftbvs4xqngcvwmwra',
-  '0x684fda8ec6707b723714586eac8f7ea6e6dec639': 'https://ipfs.decentralized-content.com/ipfs/bafybeig6u2pkggiwx4vnvrrwfhuk64tx4rnbrwrxhb7u6rfnj5tgyuuxqm',
-  '0xf801702a557c099d35e1da186ba2efb74221b020': 'https://ipfs.decentralized-content.com/ipfs/bafybeih7slqlad4iizbcpwxphlpifwcsogzyqpamjxnv4ldyzxzqnrl2hu',
-  '0x4fbcd401338f98c17191fd3a3ae4671088a9089b': 'https://ipfs.decentralized-content.com/ipfs/bafybeig2cqs42rs3cod4kff4mi3vwkosltn5jajcjcchq76f77xmkqoheu'
-};
+// Fallback image if IPFS fails
+const FALLBACK_IMAGE = "https://svgur.com/i/12aD.svg";
 
 const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
   const { address } = useWallet();
@@ -122,8 +72,8 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const itemsPerPage = 4;
-  const [nftImages, setNftImages] = useState<Record<string, string>>(REAL_NFT_IMAGES);
   
   // Total pages calculation
   const totalPages = Math.ceil(NFT_DATA.length / itemsPerPage);
@@ -140,7 +90,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
     // Simulate loading the NFT data
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 1500);
+    }, 1200);
     
     return () => clearTimeout(timer);
   }, []);
@@ -154,6 +104,16 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
     }
   };
 
+  // Handle image load errors
+  const handleImageError = (nftId: string) => {
+    setImageErrors(prev => ({ ...prev, [nftId]: true }));
+  };
+
+  // Get image URL with fallback
+  const getImageUrl = (nft: NFT) => {
+    return imageErrors[nft.id] ? `${FALLBACK_IMAGE}?seed=${nft.id}` : nft.imageUrl;
+  };
+
   if (loading) {
     return (
       <div className="text-center p-6 bg-gray-50 rounded-lg border border-gray-200">
@@ -162,6 +122,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
           <div className="h-4 bg-gray-300 rounded w-1/2"></div>
         </div>
+        <p className="mt-4 text-sm text-gray-500">Loading your verified NFTs...</p>
       </div>
     );
   }
@@ -177,51 +138,36 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
 
   const selectedNFT = NFT_DATA[selected];
 
-  // Get the real NFT image URL if available, fallback to placeholder
-  const getNFTImageUrl = (nft: NFT) => {
-    return nftImages[nft.contract] || 
-           nft.imageUrl || 
-           `https://api.dicebear.com/7.x/shapes/svg?seed=${nft.id}&backgroundType=gradientLinear&backgroundColor=${nft.bgClass.replace('from-', '').replace('to-', '')}&width=600`;
-  };
-
   return (
     <div className="p-6 bg-indigo-50 rounded-lg border border-indigo-200">
       <h3 className="text-lg font-semibold text-indigo-700 mb-4 text-center">Your NFT Collection</h3>
       
       {/* Selected NFT Display */}
       <div className="mb-6">
-        <div className="w-full max-w-xs mx-auto bg-white rounded-lg overflow-hidden shadow-lg">
-          <div 
-            className="relative h-56 bg-gradient-to-r flex items-center justify-center text-center p-4 transition-all duration-500"
-            style={{
-              backgroundImage: `url(${getNFTImageUrl(selectedNFT)})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundColor: `rgba(${selectedNFT.id.charCodeAt(0) % 255}, ${selectedNFT.id.charCodeAt(1) % 255}, ${selectedNFT.id.charCodeAt(2) % 255}, 0.1)`
-            }}
-          >
-            <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-            
-            {/* NFT Themed Image/Symbol - Only show if we don't have the real image */}
-            {!nftImages[selectedNFT.contract] && (
-              <div className="z-10 flex flex-col items-center transform transition-transform duration-500">
-                <div className="w-20 h-20 flex items-center justify-center bg-white bg-opacity-20 backdrop-blur-sm rounded-full mb-3 transition-all duration-500 hover:scale-110">
-                  <span className="text-5xl">{selectedNFT.emoji}</span>
-                </div>
-                <span className="text-white font-bold text-xl drop-shadow-md transition-all duration-500">
-                  {selectedNFT.name.toUpperCase()}
-                </span>
+        <div className="w-full max-w-xs mx-auto bg-white rounded-lg overflow-hidden shadow-md">
+          <div className="relative h-64 w-full">
+            <Image
+              src={getImageUrl(selectedNFT)}
+              alt={selectedNFT.name}
+              fill
+              className="object-cover"
+              onError={() => handleImageError(selectedNFT.id)}
+              priority
+            />
+            {imageErrors[selectedNFT.id] && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                <span className="text-5xl">{selectedNFT.emoji}</span>
               </div>
             )}
           </div>
           <div className="p-4">
-            <h3 className="font-bold text-lg mb-1 transition-all duration-500">{selectedNFT.name}</h3>
-            <p className="text-sm text-gray-600 mb-2 transition-all duration-500">{selectedNFT.description}</p>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Zora</span>
-              <span>
+            <h3 className="font-bold text-lg mb-1">{selectedNFT.name}</h3>
+            <p className="text-sm text-gray-600 mb-3">{selectedNFT.description}</p>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-blue-600 font-medium">Zora</span>
+              <span className="flex items-center bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                 <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                {selectedNFT.chain === 'base' ? 'Base Sepolia' : 'Zora Sepolia'}
+                Base Sepolia
               </span>
             </div>
           </div>
@@ -233,27 +179,28 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
         {currentNFTs.map((nft, index) => (
           <div 
             key={nft.id}
-            className={`cursor-pointer p-2 rounded-lg transition-all ${
+            className={`cursor-pointer rounded-lg transition-all duration-150 ${
               selected === currentPage * itemsPerPage + index 
-                ? 'bg-white shadow-md ring-2 ring-indigo-400' 
+                ? 'bg-white shadow-md ring-2 ring-blue-400' 
                 : 'bg-white/50 hover:bg-white hover:shadow-sm'
             }`}
             onClick={() => setSelected(currentPage * itemsPerPage + index)}
           >
-            <div 
-              className="h-16 rounded-md flex items-center justify-center mb-2 relative overflow-hidden"
-              style={{
-                backgroundImage: `url(${getNFTImageUrl(nft)})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-              }}
-            >
-              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-              {!nftImages[nft.contract] && (
-                <span className="text-2xl relative z-10">{nft.emoji}</span>
+            <div className="relative h-16 w-full rounded-t-lg overflow-hidden">
+              <Image
+                src={getImageUrl(nft)}
+                alt={nft.name}
+                fill
+                className="object-cover"
+                onError={() => handleImageError(nft.id)}
+              />
+              {imageErrors[nft.id] && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                  <span className="text-2xl">{nft.emoji}</span>
+                </div>
               )}
             </div>
-            <p className="text-xs font-medium text-center truncate">{nft.name}</p>
+            <p className="text-xs font-medium text-center p-2 truncate">{nft.name}</p>
           </div>
         ))}
       </div>
@@ -264,7 +211,8 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           <button 
             onClick={() => changePage(currentPage - 1)}
             disabled={currentPage === 0}
-            className="px-3 py-1 text-xs bg-white rounded border border-gray-200 disabled:opacity-50"
+            className="px-3 py-1 text-xs bg-white rounded-full border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Previous page"
           >
             ← Prev
           </button>
@@ -274,15 +222,16 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           <button 
             onClick={() => changePage(currentPage + 1)}
             disabled={currentPage === totalPages - 1}
-            className="px-3 py-1 text-xs bg-white rounded border border-gray-200 disabled:opacity-50"
+            className="px-3 py-1 text-xs bg-white rounded-full border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Next page"
           >
             Next →
           </button>
         </div>
       )}
 
-      <p className="text-gray-700 mb-4 text-center">
-        You&apos;ve received these NFTs proving your humanity verification status.
+      <p className="text-gray-700 mb-4 text-center text-sm">
+        These NFTs were airdropped to your wallet after verifying your humanity.
       </p>
 
       <div className="text-sm flex flex-col gap-2">
@@ -300,7 +249,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           </a>
         )}
         <a
-          href={`https://zora.co/coin/${selectedNFT.chain}:${selectedNFT.contract}?referrer=${address || '0x4c2d60f208f5217e4e8edc6af6cf47fc366329c9'}`}
+          href={`https://zora.co/collect/base-sepolia:${selectedNFT.contract}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-indigo-600 hover:text-indigo-800 inline-flex items-center justify-center"
@@ -308,7 +257,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           <span>View on Zora</span>
           <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
+            </svg>
         </a>
       </div>
     </div>
