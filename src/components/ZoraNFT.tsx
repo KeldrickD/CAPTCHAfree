@@ -248,14 +248,6 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
               >
                 View on Zora
               </a>
-              <a
-                href={`https://zora.co/collect/base:${selectedNFT.contract}${address ? `?referrer=${address}` : ''}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-md transition-colors duration-200 font-medium"
-              >
-                Buy on Zora
-              </a>
             </div>
           </div>
         </div>
@@ -313,18 +305,18 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           <button 
             onClick={() => changePage(currentPage - 1)}
             disabled={currentPage === 0}
-            className="px-3 py-1 text-xs bg-white rounded-full border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 text-xs bg-blue-600 text-white rounded-full border border-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Previous page"
           >
             ← Prev
           </button>
-          <span className="text-xs flex items-center">
+          <span className="text-xs flex items-center px-2 py-1 bg-white border border-gray-300 rounded-full">
             Page {currentPage + 1} of {totalPages}
           </span>
           <button 
             onClick={() => changePage(currentPage + 1)}
             disabled={currentPage === totalPages - 1}
-            className="px-3 py-1 text-xs bg-white rounded-full border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 text-xs bg-blue-600 text-white rounded-full border border-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Next page"
           >
             Next →
