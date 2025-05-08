@@ -96,10 +96,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const userAddress = await signer.getAddress();
 
       // Check if the connected wallet is a smart wallet
-      // We'll try to detect this based on contract accounts
-      const code = await ethersProvider.getCode(userAddress);
-      const isSmartWalletAccount = code && code !== '0x';
-      setIsSmartWallet(isSmartWalletAccount);
+      try {
+        const code = await ethersProvider.getCode(userAddress);
+        // Force to boolean with double negation
+        const isSmartWalletAccount = !!(code && code !== '0x');
+        setIsSmartWallet(isSmartWalletAccount);
+      } catch (e) {
+        console.error('Error detecting smart wallet:', e);
+        // Default to false if there's an error checking code
+        setIsSmartWallet(false);
+      }
 
       // Set state
       setProvider(ethersProvider);
