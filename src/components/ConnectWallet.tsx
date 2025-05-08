@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
+import { BASE_SEPOLIA } from '../config/wallet';
 
 const ConnectWallet: React.FC = () => {
-  const { address, isConnected, connect, disconnect, isSmartWallet } = useWallet();
+  const { address, isConnected, connect, disconnect, isSmartWallet, chainId } = useWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +28,8 @@ const ConnectWallet: React.FC = () => {
   const formatAddress = (addr: string) => {
     return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
   };
+
+  const isCorrectNetwork = chainId === BASE_SEPOLIA.id;
 
   return (
     <div>
@@ -56,6 +59,19 @@ const ConnectWallet: React.FC = () => {
               </span>
             )}
           </div>
+          <div className="text-xs text-gray-600">
+            {isCorrectNetwork ? (
+              <span className="flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                Base Sepolia Testnet
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1"></span>
+                Wrong network! Please switch to Base Sepolia
+              </span>
+            )}
+          </div>
         </div>
       ) : (
         <div>
@@ -73,7 +89,7 @@ const ConnectWallet: React.FC = () => {
                 Connecting...
               </>
             ) : (
-              <>Connect Wallet</>
+              <>Connect Wallet (Base Sepolia)</>
             )}
           </button>
           {error && (

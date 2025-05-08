@@ -59,8 +59,9 @@ export default function Home() {
           </div>
           
           <div className="mt-8 text-center text-xs text-gray-500">
-            <p>Running on Base Sepolia Testnet</p>
-            <p>To get test ETH, visit the <a href="https://www.coinbase.com/faucets/base-sepolia-faucet" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Base Sepolia Faucet</a></p>
+            <p className="font-semibold">IMPORTANT: This app runs ONLY on Base Sepolia Testnet</p>
+            <p>You need Base Sepolia ETH to verify. Get it from the <a href="https://www.coinbase.com/faucets/base-sepolia-faucet" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Base Sepolia Faucet</a></p>
+            <p className="mt-1 text-xs text-red-600">Regular ETH or other networks will not work!</p>
           </div>
         </div>
       </main>

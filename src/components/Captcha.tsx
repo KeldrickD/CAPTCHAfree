@@ -109,9 +109,11 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
         if (errorMsg.includes('invalid BigNumber value')) {
           errorMsg = 'Transaction failed: Invalid amount format';
         } else if (errorMsg.includes('insufficient funds')) {
-          errorMsg = 'Insufficient funds for transaction';
+          errorMsg = 'Insufficient funds for transaction on Base Sepolia. Please get some Base Sepolia ETH from the faucet.';
         } else if (errorMsg.includes('user rejected')) {
-          errorMsg = 'Transaction was rejected';
+          errorMsg = 'Transaction was rejected by user';
+        } else if (errorMsg.includes('network') || errorMsg.includes('chain')) {
+          errorMsg = 'Please connect to the Base Sepolia network to verify';
         }
       }
       setError(errorMsg);

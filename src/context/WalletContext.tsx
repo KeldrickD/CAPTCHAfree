@@ -14,6 +14,7 @@ interface WalletContextType {
   signer: ethers.Signer | null;
   sendTransaction: (to: string, value: string) => Promise<string>;
   isSmartWallet: boolean;
+  chainId: number | null;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -25,6 +26,7 @@ const WalletContext = createContext<WalletContextType>({
   signer: null,
   sendTransaction: async () => '',
   isSmartWallet: false,
+  chainId: null,
 });
 
 interface JsonRpcRequest {
@@ -81,6 +83,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [isSmartWallet, setIsSmartWallet] = useState(false);
   const [walletProvider, setWalletProvider] = useState<any>(null);
+  const [chainId, setChainId] = useState<number | null>(null);
 
   const connect = async () => {
     if (!isBrowser) return;
@@ -107,6 +110,51 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       
       // Request accounts to connect - this will trigger the Smart Wallet UI
       await provider.request({ method: 'eth_requestAccounts' });
+      
+      // Explicitly switch to Base Sepolia chain
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: `0x${BASE_SEPOLIA.id.toString(16)}` }], // Convert to hex
+        });
+        console.log('Switched to Base Sepolia network');
+      } catch (switchError: any) {
+        // If the chain hasn't been added to the user's wallet
+        if (switchError.code === 4902) {
+          try {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: `0x${BASE_SEPOLIA.id.toString(16)}`,
+                  chainName: BASE_SEPOLIA.name,
+                  nativeCurrency: BASE_SEPOLIA.nativeCurrency,
+                  rpcUrls: BASE_SEPOLIA.rpcUrls.default.http,
+                  blockExplorerUrls: [BASE_SEPOLIA.blockExplorers?.default.url],
+                },
+              ],
+            });
+            console.log('Added and switched to Base Sepolia network');
+          } catch (addError) {
+            console.error('Failed to add Base Sepolia network:', addError);
+            throw new Error('Please add the Base Sepolia network to your wallet');
+          }
+        } else {
+          console.error('Failed to switch to Base Sepolia:', switchError);
+          throw switchError;
+        }
+      }
+      
+      // Get the current chain ID to verify
+      const hexChainId = await provider.request({ method: 'eth_chainId' }) as string;
+      const currentChainId = parseInt(hexChainId, 16);
+      setChainId(currentChainId);
+      
+      if (currentChainId !== BASE_SEPOLIA.id) {
+        throw new Error(`Still connected to wrong network. Expected Base Sepolia (${BASE_SEPOLIA.id}), got ${currentChainId}`);
+      }
+      
+      console.log('Connected to chain ID:', currentChainId, 'Base Sepolia ID:', BASE_SEPOLIA.id);
       
       // @ts-expect-error - Type issues with provider
       const ethersProvider = new ethers.providers.Web3Provider(provider);
@@ -138,11 +186,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setSigner(null);
     setIsSmartWallet(false);
     setWalletProvider(null);
+    setChainId(null);
   };
 
   const sendTransaction = async (to: string, value: string): Promise<string> => {
     if (!address) {
       throw new Error('Wallet not connected');
+    }
+    
+    if (!chainId || chainId !== BASE_SEPOLIA.id) {
+      throw new Error(`Please connect to Base Sepolia network. Current network: ${chainId || 'unknown'}`);
     }
 
     try {
@@ -154,7 +207,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         // Convert the ETH value to hex Wei format
         // Using our simple custom function to avoid BigNumber issues
         const hexValue = ethToHexWei(value);
-        console.log('Transaction params:', { from: address, to, value: hexValue });
+        console.log('Transaction params:', { from: address, to, value: hexValue, chainId: chainId });
         
         // Call directly with explicit params and no complex objects
         const txHash = await walletProvider.request({
@@ -162,7 +215,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
           params: [{
             from: address,
             to: to,
-            value: hexValue
+            value: hexValue,
+            chainId: `0x${BASE_SEPOLIA.id.toString(16)}`
           }]
         }) as string;
         
@@ -184,9 +238,26 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Listen for chain changes
   useEffect(() => {
-    // No automatic connection attempt - let user explicitly connect
-  }, []);
+    if (walletProvider) {
+      const handleChainChanged = (chainId: string) => {
+        console.log('Chain changed to:', parseInt(chainId, 16));
+        setChainId(parseInt(chainId, 16));
+        
+        // Reload the page to ensure all data is fresh
+        if (parseInt(chainId, 16) !== BASE_SEPOLIA.id) {
+          console.warn('Wrong network detected');
+        }
+      };
+
+      walletProvider.on('chainChanged', handleChainChanged);
+
+      return () => {
+        walletProvider.removeListener('chainChanged', handleChainChanged);
+      };
+    }
+  }, [walletProvider]);
 
   return (
     <WalletContext.Provider
@@ -199,6 +270,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         signer,
         sendTransaction,
         isSmartWallet,
+        chainId,
       }}
     >
       {children}
