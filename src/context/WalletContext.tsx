@@ -15,6 +15,7 @@ interface WalletContextType {
   sendTransaction: (to: string, value: string) => Promise<string>;
   isSmartWallet: boolean;
   chainId: number | null;
+  switchToBaseSepolia: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -27,6 +28,7 @@ const WalletContext = createContext<WalletContextType>({
   sendTransaction: async () => '',
   isSmartWallet: false,
   chainId: null,
+  switchToBaseSepolia: async () => {},
 });
 
 interface JsonRpcRequest {
@@ -238,6 +240,100 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const switchToBaseSepolia = async () => {
+    if (!isBrowser) return;
+    
+    try {
+      // Initialize the Coinbase Wallet SDK with canary flag
+      const coinbaseWallet = new CoinbaseWalletSDK({
+        appName: 'CAPTCHAfree',
+        appLogoUrl: 'https://captchafree.vercel.app/logo.png',
+        // @ts-ignore - canary flag is supported but not in types
+        canary: true
+      });
+
+      // Create provider with Smart Wallet option - using smartWalletOnly
+      const provider = coinbaseWallet.makeWeb3Provider(
+        BASE_SEPOLIA.rpcUrls.default.http[0], 
+        BASE_SEPOLIA.id,
+        // @ts-ignore - options parameter is supported but not in types
+        { options: 'smartWalletOnly' }
+      );
+      
+      // Save the provider for direct RPC access
+      setWalletProvider(provider);
+      
+      // Request accounts to connect - this will trigger the Smart Wallet UI
+      await provider.request({ method: 'eth_requestAccounts' });
+      
+      // Explicitly switch to Base Sepolia chain
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: `0x${BASE_SEPOLIA.id.toString(16)}` }], // Convert to hex
+        });
+        console.log('Switched to Base Sepolia network');
+      } catch (switchError: any) {
+        // If the chain hasn't been added to the user's wallet
+        if (switchError.code === 4902) {
+          try {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: `0x${BASE_SEPOLIA.id.toString(16)}`,
+                  chainName: BASE_SEPOLIA.name,
+                  nativeCurrency: BASE_SEPOLIA.nativeCurrency,
+                  rpcUrls: BASE_SEPOLIA.rpcUrls.default.http,
+                  blockExplorerUrls: [BASE_SEPOLIA.blockExplorers?.default.url],
+                },
+              ],
+            });
+            console.log('Added and switched to Base Sepolia network');
+          } catch (addError) {
+            console.error('Failed to add Base Sepolia network:', addError);
+            throw new Error('Please add the Base Sepolia network to your wallet');
+          }
+        } else {
+          console.error('Failed to switch to Base Sepolia:', switchError);
+          throw switchError;
+        }
+      }
+      
+      // Get the current chain ID to verify
+      const hexChainId = await provider.request({ method: 'eth_chainId' }) as string;
+      const currentChainId = parseInt(hexChainId, 16);
+      setChainId(currentChainId);
+      
+      if (currentChainId !== BASE_SEPOLIA.id) {
+        throw new Error(`Still connected to wrong network. Expected Base Sepolia (${BASE_SEPOLIA.id}), got ${currentChainId}`);
+      }
+      
+      console.log('Connected to chain ID:', currentChainId, 'Base Sepolia ID:', BASE_SEPOLIA.id);
+      
+      // @ts-expect-error - Type issues with provider
+      const ethersProvider = new ethers.providers.Web3Provider(provider);
+      await ethersProvider.ready;
+      
+      const signer = ethersProvider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      // FORCE SMART WALLET: Since we're using smartWalletOnly option,
+      // we can safely assume this is a smart wallet
+      setIsSmartWallet(true);
+      console.log('Smart Wallet enabled:', true);
+
+      // Set state
+      setProvider(ethersProvider);
+      setSigner(signer);
+      setAddress(userAddress);
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      throw error;
+    }
+  };
+
   // Listen for chain changes
   useEffect(() => {
     if (walletProvider) {
@@ -271,6 +367,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         sendTransaction,
         isSmartWallet,
         chainId,
+        switchToBaseSepolia,
       }}
     >
       {children}

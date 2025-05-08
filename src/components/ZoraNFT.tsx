@@ -238,15 +238,25 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
               </span>
             </div>
             
-            {/* Direct Zora link for selected NFT */}
-            <a
-              href={`https://zora.co/coin/base:${selectedNFT.contract}${address ? `?referrer=${address}` : ''}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded-md transition-colors duration-200 font-medium"
-            >
-              View on Zora
-            </a>
+            {/* Direct Zora links for selected NFT */}
+            <div className="flex flex-col space-y-2">
+              <a
+                href={`https://zora.co/coin/base:${selectedNFT.contract}${address ? `?referrer=${address}` : ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded-md transition-colors duration-200 font-medium"
+              >
+                View on Zora
+              </a>
+              <a
+                href={`https://zora.co/collect/base:${selectedNFT.contract}${address ? `?referrer=${address}` : ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-md transition-colors duration-200 font-medium"
+              >
+                Buy on Zora
+              </a>
+            </div>
           </div>
         </div>
       </div>
