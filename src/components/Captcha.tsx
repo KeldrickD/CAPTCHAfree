@@ -76,10 +76,14 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
         return;
       }
 
+      // Use a direct string value for the ETH amount
+      // 0.001 ETH is a safe, small amount for verification
+      const verificationFeeEth = '0.001';
+      
       // Send verification transaction
       const hash = await sendTransaction(
         '0x0000000000000000000000000000000000000000', // Zero address for verification
-        ethers.utils.formatEther(VERIFICATION_FEE)
+        verificationFeeEth
       );
       setTxHash(hash);
       setSolved(true);
@@ -97,6 +101,7 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
       
       onSolve(hash);
     } catch (err) {
+      console.error('Transaction error:', err);
       setError(err instanceof Error ? err.message : 'Failed to verify humanity');
     } finally {
       setLoading(false);
@@ -105,7 +110,8 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
 
   const getUsdValue = () => {
     if (!ethPrice) return null;
-    const ethValue = parseFloat(ethers.utils.formatEther(VERIFICATION_FEE));
+    // Use a fixed value to match our direct string above
+    const ethValue = 0.001;
     return (ethValue * ethPrice).toFixed(2);
   };
 
@@ -226,7 +232,7 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
         </div>
 
         <div className="text-center text-xs text-gray-500 mt-4 group relative">
-          <span>Cost: {ethers.utils.formatEther(VERIFICATION_FEE)} ETH</span>
+          <span>Cost: 0.001 ETH</span>
           {ethPrice && (
             <span className="ml-1">
               (≈${getUsdValue()} USD)
