@@ -88,7 +88,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🎯",
     bgClass: "from-emerald-500 to-green-600",
-    imageUrl: "ipfs://bafybeih7slqlad4iizbcpwxphlpifwcsogzyqpamjxnv4ldyzxzqnrl2hu"
+    imageUrl: "ipfs://bafybeiajfp5bfb7imkgtm456rcut3pkk7lbkerp357h76nyjh3nokyneje"
   },
   {
     id: "frame-farmer-supreme",
@@ -98,7 +98,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🌾",
     bgClass: "from-amber-500 to-yellow-600",
-    imageUrl: "ipfs://bafybeig2cqs42rs3cod4kff4mi3vwkosltn5jajcjcchq76f77xmkqoheu"
+    imageUrl: "ipfs://bafybeiajowwybgvppddtpr2sxwfkazyzrs5aaw7z7cudin7zzohatv4jvu"
   },
   {
     id: "i-minted-it-anyway",
@@ -108,7 +108,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🚩",
     bgClass: "from-rose-500 to-red-600",
-    imageUrl: "ipfs://bafybeiewn6yo4idwkvuecafm44whum3ul4ycewtb7enxt6jub77gtgrnxq"
+    imageUrl: "ipfs://bafybeifr4khxjdvzhtm2c4hytwvpaozm65v3sa3efdyezcxth72snpwt6q"
   }
 ];
 
@@ -230,13 +230,23 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           <div className="p-4">
             <h3 className="font-bold text-lg mb-1 text-blue-600">{selectedNFT.name}</h3>
             <p className="text-sm text-gray-600 mb-3">{selectedNFT.description}</p>
-            <div className="flex justify-between items-center text-xs">
+            <div className="flex justify-between items-center text-xs mb-3">
               <span className="text-blue-600 font-medium">Zora</span>
               <span className="flex items-center bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                 <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
                 Base
               </span>
             </div>
+            
+            {/* Direct Zora link for selected NFT */}
+            <a
+              href={`https://zora.co/coin/base:${selectedNFT.contract}${address ? `?referrer=${address}` : ''}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded-md transition-colors duration-200 font-medium"
+            >
+              View on Zora
+            </a>
           </div>
         </div>
       </div>
@@ -254,7 +264,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
             onClick={() => setSelected(currentPage * itemsPerPage + index)}
           >
             <div 
-              className="relative h-16 w-full rounded-t-lg overflow-hidden" 
+              className="relative h-16 w-full rounded-t-lg overflow-hidden group" 
               style={{ backgroundColor: getBgColor(nft.id) }}
             >
               <img 
@@ -268,6 +278,19 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
                   <span className="text-2xl">{nft.emoji}</span>
                 </div>
               )}
+              
+              {/* Quick view overlay */}
+              <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                <a
+                  href={`https://zora.co/coin/base:${nft.contract}${address ? `?referrer=${address}` : ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
+                  onClick={(e) => e.stopPropagation()} // Prevent triggering the parent onClick
+                >
+                  View
+                </a>
+              </div>
             </div>
             <p className="text-xs font-medium text-center p-2 truncate text-blue-600">{nft.name}</p>
           </div>
@@ -317,17 +340,6 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
             </svg>
           </a>
         )}
-        <a
-          href={`https://zora.co/coin/base:${selectedNFT.contract}${address ? `?referrer=${address}` : ''}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-indigo-600 hover:text-indigo-800 inline-flex items-center justify-center"
-        >
-          <span>View on Zora</span>
-          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-        </a>
       </div>
     </div>
   );
