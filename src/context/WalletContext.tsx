@@ -12,6 +12,7 @@ interface WalletContextType {
   disconnect: () => void;
   provider: ethers.providers.Web3Provider | null;
   signer: ethers.Signer | null;
+  sendTransaction: (amount: string) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -21,6 +22,7 @@ const WalletContext = createContext<WalletContextType>({
   disconnect: () => {},
   provider: null,
   signer: null,
+  sendTransaction: async () => '',
 });
 
 interface WalletRequest {
@@ -79,6 +81,24 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setSigner(null);
   };
 
+  const sendTransaction = async (amount: string): Promise<string> => {
+    if (!signer || !address) {
+      throw new Error('Wallet not connected');
+    }
+
+    try {
+      const tx = await signer.sendTransaction({
+        to: address,
+        value: ethers.utils.parseEther(amount),
+      });
+      const receipt = await tx.wait();
+      return receipt.transactionHash;
+    } catch (error) {
+      console.error('Error sending transaction:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     // Check if wallet is already connected
     const checkConnection = async () => {
@@ -103,6 +123,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         disconnect,
         provider,
         signer,
+        sendTransaction,
       }}
     >
       {children}

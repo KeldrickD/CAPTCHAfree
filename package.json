@@ -20,7 +20,7 @@
     "postcss": "^8.4.35",
     "viem": "^2.7.9",
     "@coinbase/wallet-sdk": "^3.7.0",
-    "ethers": "^6.11.1"
+    "ethers": "^5.7.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
