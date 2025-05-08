@@ -19,7 +19,26 @@ interface ZoraNFTProps {
   txHash?: string;
 }
 
-// Define real NFT data with actual IPFS image URLs
+// Convert IPFS URL to HTTP URL using a reliable gateway
+const ipfsToHttp = (ipfsUrl: string): string => {
+  if (!ipfsUrl.startsWith('ipfs://')) return ipfsUrl;
+  
+  // Remove ipfs:// prefix and any trailing slashes
+  const cid = ipfsUrl.replace('ipfs://', '').replace(/\/$/, '');
+  
+  // Use multiple IPFS gateways for better reliability
+  const gateways = [
+    `https://ipfs.io/ipfs/${cid}`,
+    `https://gateway.pinata.cloud/ipfs/${cid}`,
+    `https://cloudflare-ipfs.com/ipfs/${cid}`,
+    `https://dweb.link/ipfs/${cid}`
+  ];
+  
+  // Return the first gateway URL (you could randomly select one for load balancing)
+  return gateways[0];
+};
+
+// Define real NFT data with IPFS image URLs
 const NFT_DATA: NFT[] = [
   {
     id: "certified-frame-degen",
@@ -29,7 +48,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🪙",
     bgClass: "from-blue-500 to-purple-600",
-    imageUrl: "https://i.imgur.com/N08eGjt.png" // Use Imgur CDN instead of IPFS
+    imageUrl: "ipfs://bafybeib73xypzrb3wf35ct2cjvs4kf5lzp6fc2kw6dagqla77uoyn6mi6e/"
   },
   {
     id: "think-last-mint-first",
@@ -39,7 +58,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🧠",
     bgClass: "from-pink-500 to-rose-600",
-    imageUrl: "https://i.imgur.com/uuY6YUJ.png" // Use Imgur CDN instead of IPFS
+    imageUrl: "ipfs://bafybeiaiu2pwyobg5tuy2dgc6qu6ycg3ytj6vjb6su4pb7lfg3lwk4i7g4"
   },
   {
     id: "based-until-rugged",
@@ -49,7 +68,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "💎",
     bgClass: "from-indigo-500 to-blue-600",
-    imageUrl: "https://i.imgur.com/9hGKsDQ.png" // Use Imgur CDN instead of IPFS
+    imageUrl: "ipfs://bafybeiasufitpd4q3mbkg27d5n62ywomo7fwgre3orsk7rjvrspraik4jq"
   },
   {
     id: "gas-fee-victim",
@@ -59,7 +78,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "⛽",
     bgClass: "from-red-500 to-orange-600",
-    imageUrl: "https://i.imgur.com/Lnh9Icp.png" // Use Imgur CDN instead of IPFS
+    imageUrl: "ipfs://bafybeihbcpi44qekhmbyx7325uxe37e32lxap54mnwcly2r32tyvqgk43u"
   }
 ];
 
@@ -90,7 +109,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
   useEffect(() => {
     NFT_DATA.forEach(nft => {
       const img = document.createElement('img');
-      img.src = nft.imageUrl;
+      img.src = ipfsToHttp(nft.imageUrl);
       img.onerror = () => {
         setImageErrors(prev => ({ ...prev, [nft.id]: true }));
       };
@@ -122,7 +141,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
 
   // Get image URL with fallback
   const getImageUrl = (nft: NFT) => {
-    return imageErrors[nft.id] ? `${FALLBACK_IMAGE}?seed=${nft.id}` : nft.imageUrl;
+    return imageErrors[nft.id] ? `${FALLBACK_IMAGE}?seed=${nft.id}` : ipfsToHttp(nft.imageUrl);
   };
 
   // Create background color based on NFT id for fallbacks
@@ -167,7 +186,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
             style={{ backgroundColor: getBgColor(selectedNFT.id) }}
           >
             <img
-              src={selectedNFT.imageUrl}
+              src={getImageUrl(selectedNFT)}
               alt={selectedNFT.name}
               className="absolute inset-0 w-full h-full object-cover"
               onError={() => handleImageError(selectedNFT.id)}
@@ -209,7 +228,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
               style={{ backgroundColor: getBgColor(nft.id) }}
             >
               <img 
-                src={nft.imageUrl}
+                src={getImageUrl(nft)}
                 alt={nft.name}
                 className="absolute inset-0 w-full h-full object-cover"
                 onError={() => handleImageError(nft.id)} 
