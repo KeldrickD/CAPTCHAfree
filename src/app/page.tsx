@@ -8,6 +8,7 @@ import { WalletProvider } from '../context/WalletContext';
 const ConnectWallet = dynamic(() => import('../components/ConnectWallet'), { ssr: false });
 const Captcha = dynamic(() => import('../components/Captcha'), { ssr: false });
 const ZoraNFT = dynamic(() => import('../components/ZoraNFT'), { ssr: false });
+const RaffleEntry = dynamic(() => import('../components/RaffleEntry'), { ssr: false });
 
 export default function Home() {
   const [isVerified, setIsVerified] = useState(false);
@@ -48,6 +49,11 @@ export default function Home() {
                 </div>
                 
                 <ZoraNFT txHash={txHash || undefined} />
+                
+                {/* Raffle Entry Component */}
+                <div className="mt-6">
+                  <RaffleEntry />
+                </div>
               </div>
             )}
           </div>
