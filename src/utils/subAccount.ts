@@ -21,14 +21,10 @@ export interface SubAccount {
   lastVerified?: Date;
 }
 
-// Verification fee in ETH (0.001 ETH = 0.1 cents)
-const VERIFICATION_FEE = parseEther('0.001');
-
-// Default spend limit (0.01 ETH = ~$0.02)
-const DEFAULT_SPEND_LIMIT = parseEther('0.01');
-
-// Verification expiry time (24 hours)
-const VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000;
+// Constants
+export const VERIFICATION_FEE = ethers.utils.parseEther('0.001');
+export const DEFAULT_SPEND_LIMIT = ethers.utils.parseEther('0.1');
+export const VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 // Initialize Coinbase Wallet SDK
 const coinbaseWallet = new CoinbaseWalletSDK({

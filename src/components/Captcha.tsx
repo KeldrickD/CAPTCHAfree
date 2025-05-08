@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import Image from 'next/image';
 import SmartWalletSetup from './SmartWalletSetup';
+import { VERIFICATION_FEE } from '../utils/subAccount';
 
 // Sample fake CAPTCHA images
 const captchaImages = [
@@ -29,6 +30,7 @@ export default function Captcha() {
     }
     return false;
   });
+  const [error, setError] = useState<string | null>(null);
 
   // Load verified state from localStorage
   useEffect(() => {
@@ -49,6 +51,17 @@ export default function Captcha() {
     }
   }, [address]);
 
+  useEffect(() => {
+    // Check if already verified
+    const verification = localStorage.getItem('humanity_verified');
+    if (verification) {
+      const { timestamp } = JSON.parse(verification);
+      if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+        setSolved(true);
+      }
+    }
+  }, []);
+
   const handleSolve = async () => {
     if (!isConnected) {
       await connect();
@@ -66,7 +79,10 @@ export default function Captcha() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         setSolved(true);
       } else {
-        const hash = await sendTransaction('0.001');
+        const hash = await sendTransaction(
+          '0x0000000000000000000000000000000000000000', // Zero address for verification
+          VERIFICATION_FEE
+        );
         setTxHash(hash);
         setSolved(true);
         // Store verification in localStorage
@@ -77,8 +93,8 @@ export default function Captcha() {
           }));
         }
       }
-    } catch (error) {
-      console.error('Failed to solve CAPTCHA:', error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to verify humanity');
     } finally {
       setLoading(false);
     }
@@ -88,6 +104,24 @@ export default function Captcha() {
     setSmartWalletEnabled(true);
     setShowSmartWalletSetup(false);
   };
+
+  if (solved) {
+    return (
+      <div className="text-center p-4 bg-green-50 rounded-lg">
+        <p className="text-green-600">Humanity verified!</p>
+        {txHash && (
+          <a
+            href={`https://sepolia.basescan.org/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:text-blue-700 text-sm"
+          >
+            View transaction
+          </a>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-xl mx-auto mt-16 bg-white rounded-2xl shadow-lg space-y-6">
@@ -146,50 +180,16 @@ export default function Captcha() {
         </>
       )}
 
-      {isConnected && solved && (
-        <div className="bg-green-100 p-5 rounded-xl text-center">
-          <h2 className="text-xl font-semibold text-green-700">✅ Access Granted</h2>
-          <p className="text-gray-700 mt-2">
-            Welcome, verified human. You&apos;ve solved the challenge.
-          </p>
-
-          {txHash && (
-            <div className="mt-4 p-3 bg-white rounded-lg border text-left">
-              <h3 className="font-bold">Transaction Details:</h3>
-              <p className="mt-1 text-sm text-gray-700 break-all">
-                TX Hash: {txHash}
-              </p>
-            </div>
-          )}
-
-          <div className="mt-4 p-3 bg-white rounded-lg border text-left">
-            <h3 className="font-bold">Secret Message:</h3>
-            <p className="mt-1 text-sm text-gray-700">
-              The real CAPTCHA was the friends we made along the way.
-            </p>
-          </div>
-
-          <div className="mt-4 p-3 bg-white rounded-lg border text-left">
-            <h3 className="font-bold">🎁 Bonus Content:</h3>
-            <p className="mt-1 text-sm text-gray-700">
-              You&apos;ve unlocked access to our exclusive content. Check back soon for more!
-            </p>
-          </div>
-
-          <div className="mt-4 p-3 bg-white rounded-lg border text-left">
-            <h3 className="font-bold">🎨 Claim Your NFT:</h3>
-            <p className="mt-1 text-sm text-gray-700 mb-2">
-              As a reward for solving the CAPTCHA, claim your exclusive NFT!
-            </p>
-            <a
-              href="https://zora.co/coin/base:0x7cacb079e2c91e1e18a82f7a4a0fce3417dbfa4c?referrer=0x4c2d60f208f5217e4e8edc6af6cf47fc366329c9"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              View on Zora
-            </a>
-          </div>
+      {isConnected && !solved && error && (
+        <div className="text-center p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">Verification Error</h3>
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={handleSolve}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       )}
     </div>
