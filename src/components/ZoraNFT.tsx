@@ -29,7 +29,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🪙",
     bgClass: "from-blue-500 to-purple-600",
-    imageUrl: "https://ipfs.decentralized-content.com/ipfs/bafybeihbmin5tj7u4kin6yt634rierxssj7xrxypnprkochp5w4yvuagiq"
+    imageUrl: "https://i.imgur.com/N08eGjt.png" // Use Imgur CDN instead of IPFS
   },
   {
     id: "think-last-mint-first",
@@ -39,7 +39,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "🧠",
     bgClass: "from-pink-500 to-rose-600",
-    imageUrl: "https://ipfs.decentralized-content.com/ipfs/bafybeifqej6e4jxk2r5mzft22vnxbyd3fqgaxk45ygrkvpnezomyh3aboi"
+    imageUrl: "https://i.imgur.com/uuY6YUJ.png" // Use Imgur CDN instead of IPFS
   },
   {
     id: "based-until-rugged",
@@ -49,7 +49,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "💎",
     bgClass: "from-indigo-500 to-blue-600",
-    imageUrl: "https://ipfs.decentralized-content.com/ipfs/bafybeiac5rcveaiu6rvytzhvt5srg7eeqz6j4b7qnftbvs4xqngcvwmwra"
+    imageUrl: "https://i.imgur.com/9hGKsDQ.png" // Use Imgur CDN instead of IPFS
   },
   {
     id: "gas-fee-victim",
@@ -59,7 +59,7 @@ const NFT_DATA: NFT[] = [
     chain: "base",
     emoji: "⛽",
     bgClass: "from-red-500 to-orange-600",
-    imageUrl: "https://ipfs.decentralized-content.com/ipfs/bafybeig6u2pkggiwx4vnvrrwfhuk64tx4rnbrwrxhb7u6rfnj5tgyuuxqm"
+    imageUrl: "https://i.imgur.com/Lnh9Icp.png" // Use Imgur CDN instead of IPFS
   }
 ];
 
@@ -85,6 +85,17 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
       (currentPage + 1) * itemsPerPage
     );
   }, [currentPage]);
+
+  // Preload all images
+  useEffect(() => {
+    NFT_DATA.forEach(nft => {
+      const img = document.createElement('img');
+      img.src = nft.imageUrl;
+      img.onerror = () => {
+        setImageErrors(prev => ({ ...prev, [nft.id]: true }));
+      };
+    });
+  }, []);
 
   useEffect(() => {
     // Simulate loading the NFT data
@@ -112,6 +123,12 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
   // Get image URL with fallback
   const getImageUrl = (nft: NFT) => {
     return imageErrors[nft.id] ? `${FALLBACK_IMAGE}?seed=${nft.id}` : nft.imageUrl;
+  };
+
+  // Create background color based on NFT id for fallbacks
+  const getBgColor = (nftId: string) => {
+    const hue = (nftId.charCodeAt(0) + nftId.charCodeAt(1)) % 360;
+    return `hsl(${hue}, 70%, 80%)`;
   };
 
   if (loading) {
@@ -145,23 +162,24 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
       {/* Selected NFT Display */}
       <div className="mb-6">
         <div className="w-full max-w-xs mx-auto bg-white rounded-lg overflow-hidden shadow-md">
-          <div className="relative h-64 w-full">
-            <Image
-              src={getImageUrl(selectedNFT)}
+          <div 
+            className="relative h-64 w-full" 
+            style={{ backgroundColor: getBgColor(selectedNFT.id) }}
+          >
+            <img
+              src={selectedNFT.imageUrl}
               alt={selectedNFT.name}
-              fill
-              className="object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               onError={() => handleImageError(selectedNFT.id)}
-              priority
             />
             {imageErrors[selectedNFT.id] && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+              <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-5xl">{selectedNFT.emoji}</span>
               </div>
             )}
           </div>
           <div className="p-4">
-            <h3 className="font-bold text-lg mb-1">{selectedNFT.name}</h3>
+            <h3 className="font-bold text-lg mb-1 text-blue-600">{selectedNFT.name}</h3>
             <p className="text-sm text-gray-600 mb-3">{selectedNFT.description}</p>
             <div className="flex justify-between items-center text-xs">
               <span className="text-blue-600 font-medium">Zora</span>
@@ -186,21 +204,23 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
             }`}
             onClick={() => setSelected(currentPage * itemsPerPage + index)}
           >
-            <div className="relative h-16 w-full rounded-t-lg overflow-hidden">
-              <Image
-                src={getImageUrl(nft)}
+            <div 
+              className="relative h-16 w-full rounded-t-lg overflow-hidden" 
+              style={{ backgroundColor: getBgColor(nft.id) }}
+            >
+              <img 
+                src={nft.imageUrl}
                 alt={nft.name}
-                fill
-                className="object-cover"
-                onError={() => handleImageError(nft.id)}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={() => handleImageError(nft.id)} 
               />
               {imageErrors[nft.id] && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-2xl">{nft.emoji}</span>
                 </div>
               )}
             </div>
-            <p className="text-xs font-medium text-center p-2 truncate">{nft.name}</p>
+            <p className="text-xs font-medium text-center p-2 truncate text-blue-600">{nft.name}</p>
           </div>
         ))}
       </div>
