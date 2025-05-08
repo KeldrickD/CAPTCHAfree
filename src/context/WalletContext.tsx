@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { CoinbaseWalletSDK } from '@coinbase/wallet-sdk';
 import { BASE_SEPOLIA } from '../config/wallet';
 import { ethers } from 'ethers';
@@ -12,7 +12,7 @@ interface WalletContextType {
   disconnect: () => void;
   provider: ethers.providers.Web3Provider | null;
   signer: ethers.Signer | null;
-  sendTransaction: (amount: string) => Promise<string>;
+  sendTransaction: (to: string, amount: string) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType>({
