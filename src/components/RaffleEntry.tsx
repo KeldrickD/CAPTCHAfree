@@ -1,8 +1,9 @@
 'use client';
 
-import { FaTicketAlt, FaGift, FaCalendarAlt } from 'react-icons/fa';
+import { FaTicketAlt, FaGift, FaCalendarAlt, FaPlus } from 'react-icons/fa';
 import Image from 'next/image';
-import React from 'react';
+import React, { useState } from 'react';
+import { useWallet } from '../context/WalletContext';
 
 // Convert IPFS URL to HTTP URL using a reliable gateway
 const ipfsToHttp = (ipfsUrl: string): string => {
@@ -33,6 +34,36 @@ const ipfsToHttp = (ipfsUrl: string): string => {
 export default function RaffleEntry() {
   const nftCid = "bafybeictqsimswrvgkbqpi6cybhrbnt7pcyxf74nsiskljrhklkhqdpoeu";
   const nftImageUrl = ipfsToHttp(nftCid);
+  const { sendTransaction, address } = useWallet();
+  const [buyingTicket, setBuyingTicket] = useState(false);
+  const [ticketSuccess, setTicketSuccess] = useState(false);
+  const [ticketError, setTicketError] = useState<string | null>(null);
+
+  const handleBuyTicket = async () => {
+    try {
+      setBuyingTicket(true);
+      setTicketError(null);
+      
+      // Send a transaction to purchase a raffle ticket - same amount as verification (0.001 ETH)
+      const txHash = await sendTransaction(
+        // Send to the zero address (or you could use a specific raffle collection address)
+        '0x0000000000000000000000000000000000000000',
+        '0.001'
+      );
+      
+      console.log('Raffle ticket purchased, txHash:', txHash);
+      setTicketSuccess(true);
+      
+      // Reset success message after 5 seconds
+      setTimeout(() => setTicketSuccess(false), 5000);
+      
+    } catch (error) {
+      console.error('Failed to buy raffle ticket:', error);
+      setTicketError(error instanceof Error ? error.message : 'Transaction failed');
+    } finally {
+      setBuyingTicket(false);
+    }
+  };
 
   return (
     <div className="bg-indigo-50 p-5 rounded-xl border border-indigo-200 shadow-inner text-center space-y-5">
@@ -59,14 +90,49 @@ export default function RaffleEntry() {
             </li>
           </ul>
           
-          <a
-            href="https://twitter.com/intent/tweet?text=I%20just%20verified%20my%20humanity%20with%20%40captchafree%20and%20entered%20the%20raffle%21"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm"
-          >
-            Share on Twitter
-          </a>
+          <div className="mt-4 space-y-2">
+            <a
+              href="https://twitter.com/intent/tweet?text=I%20just%20verified%20my%20humanity%20with%20%40captchafree%20and%20entered%20the%20raffle%21"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm"
+            >
+              Share on Twitter
+            </a>
+            
+            <button
+              onClick={handleBuyTicket}
+              disabled={buyingTicket}
+              className="inline-block w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm flex items-center justify-center"
+            >
+              {buyingTicket ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Buying Ticket...
+                </>
+              ) : (
+                <>
+                  <FaPlus className="mr-2" />
+                  Buy Additional Ticket (0.001 ETH)
+                </>
+              )}
+            </button>
+            
+            {ticketSuccess && (
+              <div className="bg-green-100 text-green-800 text-sm p-2 rounded animate-pulse">
+                Ticket purchased successfully! Your chances just increased.
+              </div>
+            )}
+            
+            {ticketError && (
+              <div className="bg-red-100 text-red-800 text-xs p-2 rounded">
+                {ticketError}
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="bg-white p-4 rounded-lg shadow-sm">
