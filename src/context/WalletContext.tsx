@@ -115,17 +115,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const signer = ethersProvider.getSigner();
       const userAddress = await signer.getAddress();
 
-      // Check if the connected wallet is a smart wallet
-      try {
-        const code = await ethersProvider.getCode(userAddress);
-        // Force to boolean with double negation
-        const isSmartWalletAccount = !!(code && code !== '0x');
-        setIsSmartWallet(isSmartWalletAccount);
-      } catch (e) {
-        console.error('Error detecting smart wallet:', e);
-        // Default to false if there's an error checking code
-        setIsSmartWallet(false);
-      }
+      // FORCE SMART WALLET: Since we're using smartWalletOnly option,
+      // we can safely assume this is a smart wallet
+      setIsSmartWallet(true);
+      console.log('Smart Wallet enabled:', true);
 
       // Set state
       setProvider(ethersProvider);
@@ -153,9 +146,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      if (isSmartWallet && walletProvider) {
+      // Always use the direct RPC method since we're forcing Smart Wallet mode
+      if (walletProvider) {
         // For Smart Wallet, use the direct RPC method with our custom hex conversion
-        console.log('Using direct RPC method for Smart Wallet transaction');
+        console.log('Using direct RPC method for transaction');
         
         // Convert the ETH value to hex Wei format
         // Using our simple custom function to avoid BigNumber issues
@@ -174,8 +168,8 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         
         return txHash;
       } else if (signer) {
-        // For regular wallets, use ethers.js
-        console.log('Using ethers.js for regular wallet transaction');
+        // This path should not be used with Smart Wallet
+        console.warn('FALLING BACK to ethers.js - this should not happen with Smart Wallet');
         const tx = await signer.sendTransaction({
           to,
           value: ethers.utils.parseEther(value),

@@ -74,6 +74,8 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
         return;
       }
 
+      console.log('Starting verification transaction with address:', address);
+      
       // Always use a fixed amount of ETH (0.001 ETH) for verification
       // The amount needs to be small enough that users don't mind spending it
       const hash = await sendTransaction(
@@ -81,6 +83,7 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
         '0.001'
       );
       
+      console.log('Transaction successful, hash:', hash);
       setTxHash(hash);
       setSolved(true);
       
