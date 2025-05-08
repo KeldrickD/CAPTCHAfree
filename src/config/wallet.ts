@@ -3,7 +3,6 @@ import { Chain } from 'viem/chains';
 export const BASE_SEPOLIA: Chain = {
   id: 84532,
   name: 'Base Sepolia',
-  network: 'base-sepolia',
   nativeCurrency: {
     decimals: 18,
     name: 'Ether',
@@ -17,4 +16,10 @@ export const BASE_SEPOLIA: Chain = {
     default: { name: 'BaseScan', url: 'https://sepolia.basescan.org' },
   },
   testnet: true,
+  contracts: {
+    multicall3: {
+      address: '0xca11bde05977b3631167028862be2a173976ca11',
+      blockCreated: 1,
+    },
+  },
 }; 
