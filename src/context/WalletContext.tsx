@@ -12,7 +12,7 @@ interface WalletContextType {
   disconnect: () => void;
   provider: ethers.providers.Web3Provider | null;
   signer: ethers.Signer | null;
-  sendTransaction: (to: string, amount: string) => Promise<string>;
+  sendTransaction: (to: string, value: string) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -25,17 +25,26 @@ const WalletContext = createContext<WalletContextType>({
   sendTransaction: async () => '',
 });
 
-interface WalletRequest {
+interface JsonRpcRequest {
+  jsonrpc: string;
+  id: number;
   method: string;
   params?: unknown[];
 }
 
-type WalletCallback = (error: Error | null, response?: unknown) => void;
+interface JsonRpcCallback {
+  (error: Error | null, response?: unknown): void;
+}
 
 interface CoinbaseWalletProvider {
-  request: (args: WalletRequest) => Promise<unknown>;
-  on: (event: string, callback: WalletCallback) => void;
-  removeListener: (event: string, callback: WalletCallback) => void;
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, listener: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, listener: (...args: unknown[]) => void) => void;
+  isCoinbaseWallet?: boolean;
+  isConnected: () => boolean;
+  enable: () => Promise<string[]>;
+  sendAsync: (request: JsonRpcRequest, callback: JsonRpcCallback) => void;
+  send: (request: JsonRpcRequest, callback: JsonRpcCallback) => void;
 }
 
 // Extend the Window interface
@@ -50,17 +59,41 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
 
-  const coinbaseWallet = new CoinbaseWalletSDK({
-    appName: 'CAPTCHAfree',
-    appLogoUrl: 'https://captchafree.vercel.app/logo.png',
-    // @ts-expect-error - chainId is supported but not in types
-    chainId: BASE_SEPOLIA.id,
-  });
-
   const connect = async () => {
     try {
-      const provider = coinbaseWallet.makeWeb3Provider();
-      const ethersProvider = new ethers.providers.Web3Provider(provider);
+      const coinbaseWallet = new CoinbaseWalletSDK({
+        appName: 'CAPTCHAfree',
+        appLogoUrl: 'https://captchafree.vercel.app/logo.png',
+        // @ts-expect-error - chainId is supported but not in types
+        chainId: BASE_SEPOLIA.chainId,
+      });
+
+      const provider = coinbaseWallet.makeWeb3Provider() as unknown as CoinbaseWalletProvider;
+      
+      // Create a custom provider that matches ethers.js v5's expected interface
+      const customProvider = {
+        ...provider,
+        sendAsync: (request: { method: string; params?: unknown[] }, callback: JsonRpcCallback) => {
+          const jsonRpcRequest: JsonRpcRequest = {
+            jsonrpc: '2.0',
+            id: Math.floor(Math.random() * 1000000),
+            method: request.method,
+            params: request.params || [],
+          };
+          provider.sendAsync(jsonRpcRequest, callback);
+        },
+        send: (request: { method: string; params?: unknown[] }, callback: JsonRpcCallback) => {
+          const jsonRpcRequest: JsonRpcRequest = {
+            jsonrpc: '2.0',
+            id: Math.floor(Math.random() * 1000000),
+            method: request.method,
+            params: request.params || [],
+          };
+          provider.send(jsonRpcRequest, callback);
+        },
+      };
+
+      const ethersProvider = new ethers.providers.Web3Provider(customProvider);
       const signer = await ethersProvider.getSigner();
       const address = await signer.getAddress();
 
@@ -69,7 +102,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       setAddress(address);
       setIsConnected(true);
     } catch (error) {
-      console.error('Error connecting wallet:', error);
+      console.error('Failed to connect wallet:', error);
       throw error;
     }
   };
@@ -81,37 +114,28 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setSigner(null);
   };
 
-  const sendTransaction = async (amount: string): Promise<string> => {
-    if (!signer || !address) {
+  const sendTransaction = async (to: string, value: string): Promise<string> => {
+    if (!signer) {
       throw new Error('Wallet not connected');
     }
 
     try {
       const tx = await signer.sendTransaction({
-        to: address,
-        value: ethers.utils.parseEther(amount),
+        to,
+        value: ethers.utils.parseEther(value),
       });
-      const receipt = await tx.wait();
-      return receipt.transactionHash;
+      return tx.hash;
     } catch (error) {
-      console.error('Error sending transaction:', error);
+      console.error('Transaction failed:', error);
       throw error;
     }
   };
 
   useEffect(() => {
     // Check if wallet is already connected
-    const checkConnection = async () => {
-      if (typeof window !== 'undefined' && window.coinbaseWalletExtension) {
-        try {
-          await connect();
-        } catch (error) {
-          console.error('Error checking wallet connection:', error);
-        }
-      }
-    };
-
-    checkConnection();
+    if (typeof window !== 'undefined' && window.coinbaseWalletExtension) {
+      connect().catch(console.error);
+    }
   }, []);
 
   return (
