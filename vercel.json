@@ -7,5 +7,14 @@
   "regions": ["iad1"],
   "env": {
     "NEXT_PUBLIC_BASE_URL": "https://captchafree.vercel.app"
-  }
+  },
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next",
+      "config": {
+        "nodeVersion": "18.x"
+      }
+    }
+  ]
 } 
