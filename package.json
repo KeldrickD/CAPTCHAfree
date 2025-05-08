@@ -21,7 +21,7 @@
     "viem": "^2.7.9",
     "@coinbase/wallet-sdk": "^3.7.0",
     "ethers": "^6.11.1",
-    "@base-org/smart-wallet-sdk": "^0.1.0"
+    "@coinbase/smart-wallet-sdk": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",

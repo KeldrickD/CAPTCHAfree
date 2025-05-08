@@ -1,4 +1,4 @@
-import { createSmartAccountClient } from '@base-org/smart-wallet-sdk';
+import { createSmartAccountClient } from '@coinbase/smart-wallet-sdk';
 import { BASE_SEPOLIA } from '../config/wallet';
 import { parseEther } from 'viem';
 
