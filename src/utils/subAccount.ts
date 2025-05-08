@@ -26,20 +26,38 @@ export const VERIFICATION_FEE = ethers.utils.parseEther('0.001');
 export const DEFAULT_SPEND_LIMIT = ethers.utils.parseEther('0.1');
 export const VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-// Initialize Coinbase Wallet SDK
-const coinbaseWallet = new CoinbaseWalletSDK({
+// Check if code is running in browser
+export const isBrowser = typeof window !== 'undefined';
+
+// Initialize Coinbase Wallet SDK only on client-side
+let coinbaseWallet: CoinbaseWalletSDK | null = null;
+
+// Function to get or initialize the SDK
+const getCoinbaseWallet = () => {
+  if (!isBrowser) return null;
+  
+  if (!coinbaseWallet) {
+    coinbaseWallet = new CoinbaseWalletSDK({
   appName: 'CAPTCHAfree',
   appLogoUrl: 'https://captchafree.vercel.app/logo.png',
   // @ts-expect-error - chainId is supported but not in types
   chainId: BASE_SEPOLIA.id,
 });
+  }
+  
+  return coinbaseWallet;
+};
 
 export const createSubAccount = async (
   ownerAddress: string,
   config: SubAccountConfig
 ): Promise<SubAccount> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const signer = await ethersProvider.getSigner();
 
@@ -79,7 +97,11 @@ export const createSubAccount = async (
 
 export const getSubAccounts = async (ownerAddress: string): Promise<SubAccount[]> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const signer = await ethersProvider.getSigner();
 
@@ -107,7 +129,11 @@ export const deleteSubAccount = async (
   subAccountAddress: string
 ): Promise<void> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const signer = await ethersProvider.getSigner();
 
@@ -129,7 +155,11 @@ export const verifyHumanity = async (
   subAccountAddress: string
 ): Promise<{ success: boolean; txHash?: string; expiryDate?: Date }> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const signer = await ethersProvider.getSigner();
 
@@ -138,11 +168,14 @@ export const verifyHumanity = async (
     const dailySpent = await getDailySpent(ownerAddress, subAccountAddress);
     const spendLimit = await getSpendLimit(ownerAddress, subAccountAddress);
 
-    if (BigInt(balance) < VERIFICATION_FEE) {
+    // Convert BigNumber to BigInt for comparison
+    const verificationFeeBigInt = BigInt(VERIFICATION_FEE.toString());
+    
+    if (BigInt(balance) < verificationFeeBigInt) {
       throw new Error('Insufficient balance for verification');
     }
 
-    if (BigInt(dailySpent) + VERIFICATION_FEE > BigInt(spendLimit)) {
+    if (BigInt(dailySpent) + verificationFeeBigInt > BigInt(spendLimit)) {
       throw new Error('Daily spend limit exceeded');
     }
 
@@ -174,7 +207,11 @@ export const checkVerificationStatus = async (
   subAccountAddress: string
 ): Promise<{ isVerified: boolean; expiryDate?: Date }> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const signer = await ethersProvider.getSigner();
 
@@ -208,7 +245,11 @@ export const getSubAccountBalance = async (
   subAccountAddress: string
 ): Promise<string> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const balance = await ethersProvider.getBalance(subAccountAddress);
     return balance.toString();
@@ -223,7 +264,11 @@ export const getSpendLimit = async (
   subAccountAddress: string
 ): Promise<string> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const signer = await ethersProvider.getSigner();
 
@@ -246,7 +291,11 @@ export const getDailySpent = async (
   subAccountAddress: string
 ): Promise<string> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const signer = await ethersProvider.getSigner();
 
@@ -270,7 +319,11 @@ export const updateSpendLimit = async (
   newLimit: string
 ): Promise<void> => {
   try {
-    const provider = coinbaseWallet.makeWeb3Provider();
+    const wallet = getCoinbaseWallet();
+    if (!wallet) throw new Error('Browser environment required');
+    
+    const provider = wallet.makeWeb3Provider();
+    // @ts-ignore Type issues with CoinbaseWalletProvider
     const ethersProvider = new ethers.providers.Web3Provider(provider);
     const signer = await ethersProvider.getSigner();
 

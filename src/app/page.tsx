@@ -1,66 +1,60 @@
 'use client';
 
+import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { WalletProvider } from '../context/WalletContext';
-import { useState } from 'react';
-import Captcha from '../components/Captcha';
+
+// Import components with dynamic import to avoid SSR issues
+const ConnectWallet = dynamic(() => import('../components/ConnectWallet'), { ssr: false });
+const Captcha = dynamic(() => import('../components/Captcha'), { ssr: false });
+const ZoraNFT = dynamic(() => import('../components/ZoraNFT'), { ssr: false });
 
 export default function Home() {
   const [isVerified, setIsVerified] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
-  const handleVerification = () => {
+  const handleVerification = (hash?: string) => {
     setIsVerified(true);
+    if (hash) setTxHash(hash);
   };
 
   return (
     <WalletProvider>
-      <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                CAPTCHAfree
-              </h1>
-              <p className="text-lg text-gray-600">
-                Skip CAPTCHAs with on-chain microtransactions
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              {!isVerified ? (
-                <div>
-                  <Captcha onSolve={handleVerification} />
-                </div>
-              ) : (
-                <div className="text-center p-6 bg-green-50 rounded-lg">
-                  <h2 className="text-2xl font-bold text-green-700 mb-4">
+      <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 lg:p-12">
+        <div className="w-full max-w-md mx-auto rounded-xl shadow-lg bg-white p-6">
+          <div className="mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2"><span className="text-blue-600">CAPTCHAfree</span></h1>
+            <p className="text-center text-gray-600">Skip CAPTCHAs by verifying your humanity with a small ETH transaction</p>
+          </div>
+          
+          <div className="mb-8 flex justify-end">
+            <ConnectWallet />
+          </div>
+          
+          <div className="border-t pt-6">
+            {!isVerified ? (
+              <Captcha 
+                onSolve={(hash?: string) => handleVerification(hash)} 
+              />
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <h2 className="text-xl font-bold text-green-700 mb-2">
                     🎉 Welcome, Verified Human!
                   </h2>
-                  <p className="text-gray-700 mb-6">
+                  <p className="text-gray-700 mb-2">
                     You now have access to all protected content.
                   </p>
-                  <div className="grid gap-6">
-                    <div className="p-4 bg-white rounded-lg border border-gray-200">
-                      <h3 className="font-bold text-lg mb-2">🔒 Protected Content</h3>
-                      <p className="text-gray-600">
-                        This content is only visible to verified humans.
-                      </p>
-                    </div>
-                    <div className="p-4 bg-white rounded-lg border border-gray-200">
-                      <h3 className="font-bold text-lg mb-2">🎁 Bonus Features</h3>
-                      <p className="text-gray-600">
-                        Enjoy exclusive access to special features and content.
-                      </p>
-                    </div>
-                    <div className="p-4 bg-white rounded-lg border border-gray-200">
-                      <h3 className="font-bold text-lg mb-2">🌟 Premium Access</h3>
-                      <p className="text-gray-600">
-                        Experience the web without interruptions.
-                      </p>
-                    </div>
-                  </div>
                 </div>
-              )}
-            </div>
+                
+                <ZoraNFT txHash={txHash || undefined} />
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-8 text-center text-xs text-gray-500">
+            <p>Running on Base Sepolia Testnet</p>
+            <p>To get test ETH, visit the <a href="https://www.coinbase.com/faucets/base-sepolia-faucet" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Base Sepolia Faucet</a></p>
           </div>
         </div>
       </main>

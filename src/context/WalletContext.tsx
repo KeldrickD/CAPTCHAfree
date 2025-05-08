@@ -53,6 +53,9 @@ declare global {
   var coinbaseWalletExtension: CoinbaseWalletProvider | undefined;
 }
 
+// Client-side check
+const isBrowser = typeof window !== 'undefined';
+
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [address, setAddress] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -60,46 +63,33 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
 
   const connect = async () => {
+    if (!isBrowser) return;
+    
     try {
       const coinbaseWallet = new CoinbaseWalletSDK({
         appName: 'CAPTCHAfree',
         appLogoUrl: 'https://captchafree.vercel.app/logo.png',
-        // @ts-expect-error - chainId is supported but not in types
-        chainId: BASE_SEPOLIA.chainId,
       });
 
-      const provider = coinbaseWallet.makeWeb3Provider() as unknown as CoinbaseWalletProvider;
+      // Initialize provider with the correct network
+      const walletProvider = coinbaseWallet.makeWeb3Provider(
+        BASE_SEPOLIA.rpcUrls.default.http[0], 
+        BASE_SEPOLIA.id
+      );
       
-      // Create a custom provider that matches ethers.js v5's expected interface
-      const customProvider = {
-        ...provider,
-        sendAsync: (request: { method: string; params?: unknown[] }, callback: JsonRpcCallback) => {
-          const jsonRpcRequest: JsonRpcRequest = {
-            jsonrpc: '2.0',
-            id: Math.floor(Math.random() * 1000000),
-            method: request.method,
-            params: request.params || [],
-          };
-          provider.sendAsync(jsonRpcRequest, callback);
-        },
-        send: (request: { method: string; params?: unknown[] }, callback: JsonRpcCallback) => {
-          const jsonRpcRequest: JsonRpcRequest = {
-            jsonrpc: '2.0',
-            id: Math.floor(Math.random() * 1000000),
-            method: request.method,
-            params: request.params || [],
-          };
-          provider.send(jsonRpcRequest, callback);
-        },
-      };
-
-      const ethersProvider = new ethers.providers.Web3Provider(customProvider);
-      const signer = await ethersProvider.getSigner();
-      const address = await signer.getAddress();
+      // Request account access
+      await walletProvider.request({ method: 'eth_requestAccounts' });
+      
+      // @ts-expect-error - Type issues with provider
+      const ethersProvider = new ethers.providers.Web3Provider(walletProvider);
+      await ethersProvider.ready;
+      
+      const signer = ethersProvider.getSigner();
+      const userAddress = await signer.getAddress();
 
       setProvider(ethersProvider);
       setSigner(signer);
-      setAddress(address);
+      setAddress(userAddress);
       setIsConnected(true);
     } catch (error) {
       console.error('Failed to connect wallet:', error);
@@ -132,10 +122,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Check if wallet is already connected
-    if (typeof window !== 'undefined' && window.coinbaseWalletExtension) {
-      connect().catch(console.error);
-    }
+    // No automatic connection attempt - let user explicitly connect
   }, []);
 
   return (
