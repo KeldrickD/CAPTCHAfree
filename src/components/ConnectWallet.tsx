@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 
 const ConnectWallet: React.FC = () => {
-  const { address, isConnected, connect, disconnect } = useWallet();
+  const { address, isConnected, connect, disconnect, isSmartWallet } = useWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,16 +31,31 @@ const ConnectWallet: React.FC = () => {
   return (
     <div>
       {isConnected && address ? (
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium bg-green-100 px-2 py-1 rounded text-green-700">
-            {formatAddress(address)}
-          </span>
-          <button
-            onClick={handleDisconnect}
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            Disconnect
-          </button>
+        <div className="flex flex-col items-start gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium bg-green-100 px-2 py-1 rounded text-green-700">
+              {formatAddress(address)}
+            </span>
+            <button
+              onClick={handleDisconnect}
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              Disconnect
+            </button>
+          </div>
+          <div className="text-xs text-gray-600">
+            {isSmartWallet ? (
+              <span className="flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>
+                Connected with Smart Wallet
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-gray-500 mr-1"></span>
+                Connected with Browser Wallet
+              </span>
+            )}
+          </div>
         </div>
       ) : (
         <div>

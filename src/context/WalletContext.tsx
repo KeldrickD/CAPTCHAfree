@@ -13,6 +13,7 @@ interface WalletContextType {
   provider: ethers.providers.Web3Provider | null;
   signer: ethers.Signer | null;
   sendTransaction: (to: string, value: string) => Promise<string>;
+  isSmartWallet: boolean;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -23,6 +24,7 @@ const WalletContext = createContext<WalletContextType>({
   provider: null,
   signer: null,
   sendTransaction: async () => '',
+  isSmartWallet: false,
 });
 
 interface JsonRpcRequest {
@@ -61,23 +63,29 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
+  const [isSmartWallet, setIsSmartWallet] = useState(false);
 
   const connect = async () => {
     if (!isBrowser) return;
     
     try {
+      // Initialize the Coinbase Wallet SDK with canary flag
       const coinbaseWallet = new CoinbaseWalletSDK({
         appName: 'CAPTCHAfree',
         appLogoUrl: 'https://captchafree.vercel.app/logo.png',
+        // @ts-ignore - canary flag is supported but not in types
+        canary: true
       });
 
-      // Initialize provider with the correct network
+      // Create provider with Smart Wallet option - using smartWalletOnly
       const walletProvider = coinbaseWallet.makeWeb3Provider(
         BASE_SEPOLIA.rpcUrls.default.http[0], 
-        BASE_SEPOLIA.id
+        BASE_SEPOLIA.id,
+        // @ts-ignore - options parameter is supported but not in types
+        { options: 'smartWalletOnly' }
       );
       
-      // Request account access
+      // Request accounts to connect - this will trigger the Smart Wallet UI
       await walletProvider.request({ method: 'eth_requestAccounts' });
       
       // @ts-expect-error - Type issues with provider
@@ -87,6 +95,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const signer = ethersProvider.getSigner();
       const userAddress = await signer.getAddress();
 
+      // Check if the connected wallet is a smart wallet
+      // We'll try to detect this based on contract accounts
+      const code = await ethersProvider.getCode(userAddress);
+      const isSmartWalletAccount = code && code !== '0x';
+      setIsSmartWallet(isSmartWalletAccount);
+
+      // Set state
       setProvider(ethersProvider);
       setSigner(signer);
       setAddress(userAddress);
@@ -102,6 +117,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setIsConnected(false);
     setProvider(null);
     setSigner(null);
+    setIsSmartWallet(false);
   };
 
   const sendTransaction = async (to: string, value: string): Promise<string> => {
@@ -135,6 +151,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         provider,
         signer,
         sendTransaction,
+        isSmartWallet,
       }}
     >
       {children}
