@@ -55,6 +55,22 @@ declare global {
   var coinbaseWalletExtension: CoinbaseWalletProvider | undefined;
 }
 
+// Convert a decimal ETH value to a hex Wei value
+// This is a simple conversion without using BigNumber
+function ethToHexWei(ethValue: string): string {
+  try {
+    // Convert ETH to Wei (1 ETH = 10^18 Wei)
+    const eth = parseFloat(ethValue);
+    const wei = eth * 1e18;
+    
+    // Convert to hex with "0x" prefix
+    return "0x" + Math.floor(wei).toString(16);
+  } catch (error) {
+    console.error("Error converting ETH to hex Wei:", error);
+    throw new Error("Invalid ETH value format");
+  }
+}
+
 // Client-side check
 const isBrowser = typeof window !== 'undefined';
 
@@ -137,31 +153,36 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Convert ETH value to Wei as hex string
-      const valueWei = ethers.utils.hexValue(ethers.utils.parseEther(value));
-      
       if (isSmartWallet && walletProvider) {
-        // Use the raw provider method directly for Smart Wallet
-        // This bypasses any issues with ethers.js and Smart Wallet
+        // For Smart Wallet, use the direct RPC method with our custom hex conversion
+        console.log('Using direct RPC method for Smart Wallet transaction');
+        
+        // Convert the ETH value to hex Wei format
+        // Using our simple custom function to avoid BigNumber issues
+        const hexValue = ethToHexWei(value);
+        console.log('Transaction params:', { from: address, to, value: hexValue });
+        
+        // Call directly with explicit params and no complex objects
         const txHash = await walletProvider.request({
           method: 'eth_sendTransaction',
           params: [{
             from: address,
-            to,
-            value: valueWei
+            to: to,
+            value: hexValue
           }]
         }) as string;
         
         return txHash;
       } else if (signer) {
-        // Fallback to ethers.js for regular wallets
+        // For regular wallets, use ethers.js
+        console.log('Using ethers.js for regular wallet transaction');
         const tx = await signer.sendTransaction({
           to,
           value: ethers.utils.parseEther(value),
         });
         return tx.hash;
       } else {
-        throw new Error('No wallet available');
+        throw new Error('No wallet provider available');
       }
     } catch (error) {
       console.error('Transaction failed:', error);

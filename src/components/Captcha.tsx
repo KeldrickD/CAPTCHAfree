@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { VERIFICATION_FEE } from '../utils/subAccount';
-import { ethers } from 'ethers';
 import Image from 'next/image';
 
 interface CaptchaProps {
@@ -76,15 +74,13 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
         return;
       }
 
-      // Use a direct string value for the ETH amount
-      // 0.001 ETH is a safe, small amount for verification
-      const verificationFeeEth = '0.001';
-      
-      // Send verification transaction
+      // Always use a fixed amount of ETH (0.001 ETH) for verification
+      // The amount needs to be small enough that users don't mind spending it
       const hash = await sendTransaction(
         '0x0000000000000000000000000000000000000000', // Zero address for verification
-        verificationFeeEth
+        '0.001'
       );
+      
       setTxHash(hash);
       setSolved(true);
       
@@ -102,7 +98,20 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
       onSolve(hash);
     } catch (err) {
       console.error('Transaction error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to verify humanity');
+      // Extract a more user-friendly error message
+      let errorMsg = 'Failed to verify humanity';
+      if (err instanceof Error) {
+        errorMsg = err.message;
+        // Try to extract more specific error from JSON RPC error responses
+        if (errorMsg.includes('invalid BigNumber value')) {
+          errorMsg = 'Transaction failed: Invalid amount format';
+        } else if (errorMsg.includes('insufficient funds')) {
+          errorMsg = 'Insufficient funds for transaction';
+        } else if (errorMsg.includes('user rejected')) {
+          errorMsg = 'Transaction was rejected';
+        }
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -110,7 +119,7 @@ const Captcha: React.FC<CaptchaProps> = ({ onSolve }) => {
 
   const getUsdValue = () => {
     if (!ethPrice) return null;
-    // Use a fixed value to match our direct string above
+    // Use a fixed value for USD calculation
     const ethValue = 0.001;
     return (ethValue * ethPrice).toFixed(2);
   };
