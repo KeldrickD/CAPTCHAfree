@@ -38,10 +38,10 @@ interface CoinbaseWalletProvider {
   removeListener: (event: string, callback: WalletCallback) => void;
 }
 
+// Extend the Window interface
 declare global {
-  interface Window {
-    coinbaseWalletExtension?: CoinbaseWalletProvider;
-  }
+  // eslint-disable-next-line no-var
+  var coinbaseWalletExtension: CoinbaseWalletProvider | undefined;
 }
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
@@ -102,7 +102,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Check if wallet is already connected
     const checkConnection = async () => {
-      if (window.coinbaseWalletExtension) {
+      if (typeof window !== 'undefined' && window.coinbaseWalletExtension) {
         try {
           await connect();
         } catch (error) {
