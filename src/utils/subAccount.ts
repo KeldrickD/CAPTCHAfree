@@ -1,6 +1,7 @@
-import { createSmartAccountClient } from '@coinbase/smart-wallet-sdk';
+import { CoinbaseWalletSDK } from '@coinbase/wallet-sdk';
 import { BASE_SEPOLIA } from '../config/wallet';
 import { parseEther } from 'viem';
+import { ethers } from 'ethers';
 
 export interface SubAccountConfig {
   name: string;
@@ -29,27 +30,48 @@ const DEFAULT_SPEND_LIMIT = parseEther('0.01');
 // Verification expiry time (24 hours)
 const VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000;
 
+// Initialize Coinbase Wallet SDK
+const coinbaseWallet = new CoinbaseWalletSDK({
+  appName: 'CAPTCHAfree',
+  appLogoUrl: 'https://captchafree.vercel.app/logo.png',
+  // @ts-expect-error - chainId is supported but not in types
+  chainId: BASE_SEPOLIA.id,
+});
+
 export const createSubAccount = async (
   ownerAddress: string,
   config: SubAccountConfig
 ): Promise<SubAccount> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const signer = await ethersProvider.getSigner();
 
     const spendLimit = config.spendLimit ? parseEther(config.spendLimit) : DEFAULT_SPEND_LIMIT;
 
-    const subAccount = await smartAccountClient.createSubAccount({
+    // Create a new account using the signer
+    const factory = new ethers.Contract(
+      '0x...', // Base Smart Wallet Factory address
+      ['function createAccount(address owner, uint256 salt) returns (address)'],
+      signer
+    );
+
+    const salt = ethers.utils.randomBytes(32);
+    const tx = await factory.createAccount(ownerAddress, salt);
+    const receipt = await tx.wait();
+
+    // Get the new account address from the event
+    const event = receipt.logs.find(
+      (log: { fragment?: { name: string }; args?: unknown[] }) => log.fragment?.name === 'AccountCreated'
+    );
+    const subAccountAddress = event?.args[0];
+
+    return {
+      address: subAccountAddress,
       name: config.name,
       description: config.description,
       imageUrl: config.imageUrl,
-      spendLimit: spendLimit.toString(),
-    });
-
-    return {
-      ...subAccount,
+      createdAt: new Date(),
       spendLimit: spendLimit.toString(),
       dailySpent: '0',
     };
@@ -61,13 +83,23 @@ export const createSubAccount = async (
 
 export const getSubAccounts = async (ownerAddress: string): Promise<SubAccount[]> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const signer = await ethersProvider.getSigner();
 
-    const subAccounts = await smartAccountClient.getSubAccounts();
-    return subAccounts;
+    // Get accounts from the factory
+    const factory = new ethers.Contract(
+      '0x...', // Base Smart Wallet Factory address
+      ['function getAccountsOfOwner(address owner) view returns (address[])'],
+      signer
+    );
+
+    const accounts = await factory.getAccountsOfOwner(ownerAddress);
+    return accounts.map((address: string) => ({
+      address,
+      name: `Sub Account ${address.slice(0, 6)}`,
+      createdAt: new Date(),
+    }));
   } catch (error) {
     console.error('Error getting sub accounts:', error);
     throw error;
@@ -79,12 +111,17 @@ export const deleteSubAccount = async (
   subAccountAddress: string
 ): Promise<void> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const signer = await ethersProvider.getSigner();
 
-    await smartAccountClient.deleteSubAccount(subAccountAddress);
+    const account = new ethers.Contract(
+      subAccountAddress,
+      ['function destroy()'],
+      signer
+    );
+
+    await account.destroy();
   } catch (error) {
     console.error('Error deleting sub account:', error);
     throw error;
@@ -96,10 +133,9 @@ export const verifyHumanity = async (
   subAccountAddress: string
 ): Promise<{ success: boolean; txHash?: string; expiryDate?: Date }> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const signer = await ethersProvider.getSigner();
 
     // Check if sub account has enough balance and hasn't exceeded spend limit
     const balance = await getSubAccountBalance(ownerAddress, subAccountAddress);
@@ -115,17 +151,20 @@ export const verifyHumanity = async (
     }
 
     // Send verification fee from sub account
-    const tx = await smartAccountClient.sendTransaction({
-      from: subAccountAddress,
-      to: ownerAddress, // Send back to owner
-      value: VERIFICATION_FEE,
-    });
+    const account = new ethers.Contract(
+      subAccountAddress,
+      ['function execute(address to, uint256 value, bytes data)'],
+      signer
+    );
+
+    const tx = await account.execute(ownerAddress, VERIFICATION_FEE, '0x');
+    const receipt = await tx.wait();
 
     const expiryDate = new Date(Date.now() + VERIFICATION_EXPIRY);
 
     return {
       success: true,
-      txHash: tx.hash,
+      txHash: receipt.hash,
       expiryDate,
     };
   } catch (error) {
@@ -139,18 +178,23 @@ export const checkVerificationStatus = async (
   subAccountAddress: string
 ): Promise<{ isVerified: boolean; expiryDate?: Date }> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const signer = await ethersProvider.getSigner();
 
-    const lastVerified = await smartAccountClient.getLastVerified(subAccountAddress);
+    const account = new ethers.Contract(
+      subAccountAddress,
+      ['function lastVerified() view returns (uint256)'],
+      signer
+    );
+
+    const lastVerified = await account.lastVerified();
     
     if (!lastVerified) {
       return { isVerified: false };
     }
 
-    const expiryDate = new Date(lastVerified.getTime() + VERIFICATION_EXPIRY);
+    const expiryDate = new Date(Number(lastVerified) * 1000 + VERIFICATION_EXPIRY);
     const isVerified = Date.now() < expiryDate.getTime();
 
     return {
@@ -168,12 +212,9 @@ export const getSubAccountBalance = async (
   subAccountAddress: string
 ): Promise<string> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
-
-    const balance = await smartAccountClient.getBalance(subAccountAddress);
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const balance = await ethersProvider.getBalance(subAccountAddress);
     return balance.toString();
   } catch (error) {
     console.error('Error getting sub account balance:', error);
@@ -186,12 +227,17 @@ export const getSpendLimit = async (
   subAccountAddress: string
 ): Promise<string> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const signer = await ethersProvider.getSigner();
 
-    const spendLimit = await smartAccountClient.getSpendLimit(subAccountAddress);
+    const account = new ethers.Contract(
+      subAccountAddress,
+      ['function spendLimit() view returns (uint256)'],
+      signer
+    );
+
+    const spendLimit = await account.spendLimit();
     return spendLimit.toString();
   } catch (error) {
     console.error('Error getting spend limit:', error);
@@ -204,12 +250,17 @@ export const getDailySpent = async (
   subAccountAddress: string
 ): Promise<string> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const signer = await ethersProvider.getSigner();
 
-    const dailySpent = await smartAccountClient.getDailySpent(subAccountAddress);
+    const account = new ethers.Contract(
+      subAccountAddress,
+      ['function dailySpent() view returns (uint256)'],
+      signer
+    );
+
+    const dailySpent = await account.dailySpent();
     return dailySpent.toString();
   } catch (error) {
     console.error('Error getting daily spent:', error);
@@ -223,12 +274,17 @@ export const updateSpendLimit = async (
   newLimit: string
 ): Promise<void> => {
   try {
-    const smartAccountClient = await createSmartAccountClient({
-      chain: BASE_SEPOLIA,
-      ownerAddress,
-    });
+    const provider = coinbaseWallet.makeWeb3Provider();
+    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    const signer = await ethersProvider.getSigner();
 
-    await smartAccountClient.updateSpendLimit(subAccountAddress, parseEther(newLimit));
+    const account = new ethers.Contract(
+      subAccountAddress,
+      ['function setSpendLimit(uint256 newLimit)'],
+      signer
+    );
+
+    await account.setSpendLimit(parseEther(newLimit));
   } catch (error) {
     console.error('Error updating spend limit:', error);
     throw error;
