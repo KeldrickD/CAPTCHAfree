@@ -79,6 +79,36 @@ const NFT_DATA: NFT[] = [
     emoji: "⛽",
     bgClass: "from-red-500 to-orange-600",
     imageUrl: "ipfs://bafybeihbcpi44qekhmbyx7325uxe37e32lxap54mnwcly2r32tyvqgk43u"
+  },
+  {
+    id: "mint-or-die-trying",
+    name: "Mint or Die Trying",
+    description: "50 casts, zero regrets.",
+    contract: "0xf801702a557c099d35e1da186ba2efb74221b020",
+    chain: "base",
+    emoji: "🎯",
+    bgClass: "from-emerald-500 to-green-600",
+    imageUrl: "ipfs://bafybeih7slqlad4iizbcpwxphlpifwcsogzyqpamjxnv4ldyzxzqnrl2hu"
+  },
+  {
+    id: "frame-farmer-supreme",
+    name: "Frame Farmer Supreme",
+    description: "I cast more than I sleep.",
+    contract: "0x4fbcd401338f98c17191fd3a3ae4671088a9089b",
+    chain: "base",
+    emoji: "🌾",
+    bgClass: "from-amber-500 to-yellow-600",
+    imageUrl: "ipfs://bafybeig2cqs42rs3cod4kff4mi3vwkosltn5jajcjcchq76f77xmkqoheu"
+  },
+  {
+    id: "i-minted-it-anyway",
+    name: "I Minted It Anyway",
+    description: "Red flags? I saw them and minted harder.",
+    contract: "0xbf0099de84ec528792fbd1c0aa45e2666636a33a",
+    chain: "base",
+    emoji: "🚩",
+    bgClass: "from-rose-500 to-red-600",
+    imageUrl: "ipfs://bafybeiewn6yo4idwkvuecafm44whum3ul4ycewtb7enxt6jub77gtgrnxq"
   }
 ];
 
@@ -204,7 +234,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
               <span className="text-blue-600 font-medium">Zora</span>
               <span className="flex items-center bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
                 <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                Base Sepolia
+                Base
               </span>
             </div>
           </div>
@@ -288,7 +318,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           </a>
         )}
         <a
-          href={`https://zora.co/collect/base-sepolia:${selectedNFT.contract}`}
+          href={`https://zora.co/coin/base:${selectedNFT.contract}${address ? `?referrer=${address}` : ''}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-indigo-600 hover:text-indigo-800 inline-flex items-center justify-center"
