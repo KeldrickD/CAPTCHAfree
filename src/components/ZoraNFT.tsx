@@ -206,7 +206,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
 
   return (
     <div className="p-6 bg-indigo-50 rounded-lg border border-indigo-200">
-      <h3 className="text-lg font-semibold text-indigo-700 mb-4 text-center">Your NFT Collection</h3>
+      <h3 className="text-lg font-semibold text-indigo-700 mb-4 text-center">Mint First, Think Later</h3>
       
       {/* Selected NFT Display */}
       <div className="mb-6">
@@ -310,7 +310,7 @@ const ZoraNFT: React.FC<ZoraNFTProps> = ({ txHash }) => {
           >
             ← Prev
           </button>
-          <span className="text-xs flex items-center px-2 py-1 bg-white border border-gray-300 rounded-full">
+          <span className="text-xs flex items-center px-2 py-1 bg-white border border-gray-300 rounded-full font-medium text-gray-800">
             Page {currentPage + 1} of {totalPages}
           </span>
           <button 
